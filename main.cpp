@@ -9,8 +9,13 @@
 
 
 using namespace std;
-class PhysicalItem;
 
+class PhysicalItem;
+/*
+ * Abstract class for creating characters
+ * @param healthPoint - Health
+ * @param name - Character name
+ */
 class Character {
     friend PhysicalItem;
 protected:
@@ -23,52 +28,62 @@ public:
     Character(string &n, int HP) : name(n), healthPoints(HP){}
     virtual ~Character() = default;
 
+    /*
+     * Method for making characters speak
+     */
     void speak(const string &speech) {
         cout << name << ": " << speech << endl;
     }
-
+    //Getter
     virtual string getName(){
         return name;
     }
-
+    //Getter
     virtual int getHP(){
         return healthPoints;
     }
-
+    /*
+     * Method for getting item into the inventory
+     */
     virtual void obtainItem(const shared_ptr<PhysicalItem>& item){
 
     }
 
-    virtual void loseItem(const shared_ptr<PhysicalItem>& item){
-
-    }
-
-
+    /*
+     * << operator overrule
+     */
     friend ostream& operator<<(ostream& os, const Character& character){
         os << character.toString();
         return os;
     }
 
 private:
+    /*
+     * Method for taking damage
+     */
     virtual void takeDamage(int damage){
         healthPoints -= damage;
     }
+    /*
+     * Method for healing
+     */
     virtual void heal(int healValue) {
         healthPoints += healValue;
     }
-    virtual void die(){
-
-    }
 };
 
+/*
+ * Base abstract class for physical items
+ * @param owner - Owner of the item
+ * @param name - Name of the item
+ */
 class PhysicalItem {
 protected:
-    bool isUsableOnce;
     Character owner;
     string name;
 
 public:
-    PhysicalItem(string &n, Character &character, bool isUsableOnce) : owner(character), name(n), isUsableOnce(isUsableOnce){}
+    PhysicalItem(string &n, Character &character) : owner(character), name(n){}
     ~PhysicalItem() = default;
     friend ostream& operator<<(ostream& os, PhysicalItem& physicalItem){
         os << physicalItem.toString() << " ";
@@ -78,21 +93,21 @@ public:
         return name;
     }
 protected:
-    Character& getOwner() {
-        return owner;
-    }
-    void useCondition(Character& user, Character& target){
-
-    }
+    /*
+     * Method for giving damage to another player
+     */
     void giveDamageTo(Character& to, int damage){
         to.takeDamage(damage);
     }
+    /*
+     * Method to heal player
+     */
     void giveHealTo(Character& to, int heal){
         to.heal(heal);
     }
-    virtual void afterUse(){
-
-    }
+    /*
+     * Method for using the logic of the item
+     */
     virtual void useLogic(Character& target){
 
     }
@@ -101,11 +116,16 @@ protected:
 
 };
 
+/*
+ * Child class of a physical item
+ * @param damage - amount of damage that will be dealt with this weapon
+ * @see PhysicalItem
+ */
 class Weapon : public PhysicalItem {
 private:
     int damage;
 public:
-    Weapon(string &n, Character &character, int damage) : PhysicalItem(n, character, false), damage(damage)
+    Weapon(string &n, Character &character, int damage) : PhysicalItem(n, character), damage(damage)
     {
         cout << owner.getName() << " just obtained a new weapon called " << name << "." << endl;
     }
@@ -123,12 +143,16 @@ protected:
 
 
 };
-
+/*
+ * Child class of a physical item
+ * @param healValue - amount of HP given to a character
+ * @see PhysicalItem
+ */
 class Potion : public PhysicalItem {
 private:
     int healValue;
 public:
-    Potion(string &n, Character &owner, int healValue) : PhysicalItem(n, owner, true), healValue(healValue)
+    Potion(string &n, Character &owner, int healValue) : PhysicalItem(n, owner), healValue(healValue)
     {
         cout << owner.getName() << " just obtained a new potion called " << name << "." << endl;
     }
@@ -142,12 +166,16 @@ protected:
         return name + ":" + to_string(healValue);
     }
 };
-
+/*
+ * Child class of a physical item
+ * @param allowedTargets - map of characters that can be attacked with a spell
+ * @see PhysicalItem
+ */
 class Spell : public PhysicalItem{
 private:
     map<string, shared_ptr<Character>> allowedTargets;
 public:
-    Spell(string &n, Character &owner, map<string, shared_ptr<Character>> &targets) : PhysicalItem(n, owner, true), allowedTargets(targets)
+    Spell(string &n, Character &owner, map<string, shared_ptr<Character>> &targets) : PhysicalItem(n, owner), allowedTargets(targets)
     {
         cout << owner.getName() << " just obtained a new spell called " << name << "." << endl;
     }
@@ -161,6 +189,10 @@ public:
             cout << "Error caught" << endl;
         }
     }
+    /*
+     * Checks if target character is in allowedTargets list
+     * @see allowedTargets
+     */
     bool isTargetInList(Character &target){
         auto it = allowedTargets.find(target.getName());
         return it != allowedTargets.end() && it->second;
@@ -171,7 +203,9 @@ protected:
     }
 
 };
-
+/*
+ * Definition of a Container class
+ */
 template<typename  T>
 class Container{
 protected:
@@ -183,7 +217,12 @@ public:
 template<typename T>
 concept DerivedFromPhysicalItem = is_base_of<PhysicalItem, T>::value;
 
-
+/*
+ * Declaration of a container class with template type T, being all items derived from PhysicalItem
+ * @param elements - map of items in the inventory
+ * @param maxCapacity - max size
+ * @see PhysicalItem
+ */
 template<DerivedFromPhysicalItem  T>
 class Container<T>{
 private:
@@ -203,39 +242,67 @@ public:
     bool isFull(){
         return this->elements.size() == maxCapacity;
     }
-
+    /*
+     * Adds item into the container
+     */
     void addItem(shared_ptr<T> newItem){
-
         elements.insert({newItem->getName(), std::move(newItem)});
     }
-
+    /*
+     * Gets a pointer to an item from the container
+     */
     shared_ptr<T>& getItem(string & item){
         return elements.at(item);
     }
-
+    /*
+     * Checks if item is in the container
+     */
     bool find(string & item){
         return elements.contains(item);
     }
-
+    /*
+     * Gives a map of all items in the container
+     */
     map<string, shared_ptr<T>>& toShow(){
         return elements;
     }
-
+    /*
+     * Removes item from the container
+     */
     void removeItem(string & itemName){
         elements.erase(itemName);
     }
+    /*
+     * Changes the size of the container
+     */
     void resizeContainer(int size){
         maxCapacity = size;
     }
 
 
 };
-
+/*
+ * Arsenal type, for Container<Weapons>
+ */
 typedef Container<Weapon> Arsenal;
+/*
+ * MedicalBag type, for Container<Potion>
+ */
 typedef Container<Potion> MedicalBag;
+/*
+ * SpellBook type, for Container<Spell>
+ */
 typedef Container<Spell> SpellBook;
 
-
+/*
+ * Child class of a character
+ * Allows to store and use weapons
+ * @param arsenal - container for weapon type items
+ * @see Character
+ * @see Container
+ * @see Arsenal
+ * @see Weapon
+ */
 class WeaponUser : virtual public Character{
 protected:
     Arsenal arsenal;
@@ -248,14 +315,18 @@ public:
     bool isFull() {
         return arsenal.isFull();
     }
-
+    /*
+     * Method for showing weapons
+     */
     void showWeapons(){
         for (const auto& weapon : arsenal.toShow()){
             cout << *weapon.second << " ";
         }
         cout << endl;
     }
-
+    /*
+     * Method for attacking another player
+     */
     void attack(Character &target, string weaponName){
         if (arsenal.find(weaponName)){
             arsenal.getItem(weaponName)->useLogic(target);
@@ -266,7 +337,15 @@ public:
 
     }
 };
-
+/*
+ * Child class of a character
+ * Allows to store and use potions
+ * @param medicalBag - container for potion type items
+ * @see Character
+ * @see Container
+ * @see MedicalBag
+ * @see Potion
+ */
 class PotionUser : virtual public Character{
 protected:
     MedicalBag medicalBag;
@@ -277,14 +356,18 @@ public:
     bool isFull() {
         return medicalBag.isFull();
     };
-
+    /*
+     * Method for showing potions
+     */
     void showPotions(){
         for (const auto& potion : medicalBag.toShow()){
             cout << *potion.second << " ";
         }
         cout << endl;
     }
-
+    /*
+     * Method for drinking potions
+     */
     void drink(Character &target, string potionName){
         if (medicalBag.find(potionName)){
             medicalBag.getItem(potionName)->useLogic(target);
@@ -297,7 +380,15 @@ public:
     }
 
 };
-
+/*
+ * Child class of a character
+ * Allows to store and use spells
+ * @param spellBook - container for spell type items
+ * @see Character
+ * @see Container
+ * @see SpellBook
+ * @see Spell
+ */
 class SpellUser : virtual public Character{
 protected:
     SpellBook spellBook;
@@ -309,13 +400,18 @@ public:
     bool isFull() {
         return spellBook.isFull();
     }
-
+    /*
+     * Method for showing spells
+     */
     void showSpells(){
         for (const auto& spell : spellBook.toShow()){
             cout << *spell.second << " ";
         }
         cout << endl;
     }
+    /*
+     * Method for casting spells on characters
+     */
     void cast(Character &target, string spellName){
         if (spellBook.find(spellName)){
             if (spellBook.getItem(spellName)->isTargetInList(target)){
@@ -331,8 +427,12 @@ public:
     }
 
 };
-
-class Fighter : public WeaponUser, public PotionUser, public virtual Character{
+/*
+ * Child class of a WeaponUser and PotionUser
+ * @param maxAllowedWeapons - size of arsenal
+ * @param maxAllowedPotions - size of medicalBag
+ */
+class Fighter : public WeaponUser, public PotionUser{
 public:
     const int maxAllowedWeapons = 3;
     const int maxAllowedPotions = 5;
@@ -357,7 +457,12 @@ private:
 
 
 };
-
+/*
+ * Child class of a WeaponUser, PotionUser and SpellUser
+ * @param maxAllowedWeapons - size of arsenal
+ * @param maxAllowedPotions - size of medicalBag
+ * @param maxAllowedSpells - size of spellBook
+ */
 class Archer : public WeaponUser, public PotionUser, public SpellUser{
 public:
     const int maxAllowedWeapons = 2;
@@ -385,7 +490,11 @@ private:
     }
 
 };
-
+/*
+ * Child class of a PotionUser and SpellUser
+ * @param maxAllowedPotions - size of medicalBag
+ * @param maxAllowedSpells - size of spellBook
+ */
 class Wizard : public PotionUser, public SpellUser{
 public:
     const int maxAllowedPotions = 10;
@@ -414,7 +523,11 @@ private:
 int main(){
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
+    /*
+     * A map of Characters
+     */
     map<string, shared_ptr<Character>> characters;
+    //Creation of character narrator
     string narratorName = "Narrator";
     Character narrator(narratorName, 0);
     int n;
@@ -431,7 +544,9 @@ int main(){
         while (iss >> word) {
             words.push_back(word);
         }
+        //Case creation of something
         if (words[0] == "Create") {
+            //Creation of a character
             if (words[1] == "character"){
                 string type = words[2];
                 string name = words[3];
@@ -444,7 +559,9 @@ int main(){
                     characters[name] = make_shared<Archer>(name, initHP);
                 }
                 continue;
+            //Creation of an item
             } else if (words[1] == "item"){
+                //Creation of a potion
                 if (words[2] == "potion") {
                     string ownerName = words[3];
                     string potionName = words[4];
@@ -470,7 +587,7 @@ int main(){
                     } else {
                         cout << "Error caught" << endl;
                     }
-
+                //Creation of a weapon
                 } else if (words[2] == "weapon") {
                     string ownerName = words[3];
                     string weaponName = words[4];
@@ -495,7 +612,7 @@ int main(){
                     } else {
                         cout << "Error caught" << endl;
                     }
-
+                //Creation of a spell
                 } else if (words[2] == "spell") {
                     string ownerName = words[3];
                     string spellName = words[4];
@@ -530,7 +647,9 @@ int main(){
                     }
                 }
             }
+        //Case of showing something
         } else if (words[0] == "Show") {
+            //Showing characters
             if (words[1] == "characters"){
                 for (const auto& character : characters){
                     cout << *character.second << " ";
@@ -550,6 +669,7 @@ int main(){
                 } else {
                     std::cout << "Error caught" << std::endl;
                 }
+                //Showing weapons of a specific character
             } else if (words[1] == "weapons") {
                 string characterName = words[2];
                 auto it = characters.find(characterName);
@@ -563,6 +683,7 @@ int main(){
                 } else {
                     cout << "Error caught" << endl;
                 }
+                //Showing spells of a specific character
             } else if (words[1] == "spells") {
                 string characterName = words[2];
                 auto it = characters.find(characterName);
@@ -577,8 +698,10 @@ int main(){
                     cout << "Error caught" << endl;
                 }
             }
+        //Case for initiating a dialogue
         } else if (words[0] == "Dialogue"){
             int numberOfWords = stoi(words[2]);
+            //Case if narrator is speaking
             if (words[1] == "Narrator"){
                 string speech;
                 for (int j = 3; j < numberOfWords + 3; ++j){
@@ -597,6 +720,7 @@ int main(){
                     cout << "Error caught" << endl;
                 }
             }
+        //Case for drinking a potion
         } else if (words[0] == "Drink") {
             string supplierName = words[1];
             string drinkerName = words[2];
@@ -616,6 +740,7 @@ int main(){
             } else {
                 cout << "Error caught" << endl;
             }
+        //Case for attacking
         } else if (words[0] == "Attack") {
             string attackerName = words[1];
             string targetName = words[2];
@@ -641,6 +766,7 @@ int main(){
             } else {
                 cout << "Error caught" << endl;
             }
+        //Case for casting a spell
         } else if (words[0] == "Cast"){
             string casterName = words[1];
             string targetName = words[2];
