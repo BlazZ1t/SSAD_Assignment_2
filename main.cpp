@@ -12,7 +12,7 @@ using namespace std;
 
 class PhysicalItem;
 
-/*
+/**
  * Abstract class for creating characters
  * @param healthPoint - Health
  * @param name - Character name
@@ -33,8 +33,9 @@ public:
 
     virtual ~Character() = default;
 
-    /*
+    /**
      * Method for making characters speak
+     * @param speech Text for a character to say
      */
     void speak(const string &speech)
     {
@@ -53,15 +54,16 @@ public:
         return healthPoints;
     }
 
-    /*
+    /**
      * Method for getting item into the inventory
+     * @param item The item to obtain
      */
     virtual void obtainItem(const shared_ptr<PhysicalItem> &item)
     {
 
     }
 
-    /*
+    /**
      * << operator overrule
      */
     friend ostream &operator<<(ostream &os, const Character &character)
@@ -71,16 +73,18 @@ public:
     }
 
 private:
-    /*
+    /**
      * Method for taking damage
+     * @param damage Amount of damage to take
      */
     virtual void takeDamage(int damage)
     {
         healthPoints -= damage;
     }
 
-    /*
+    /**
      * Method for healing
+     * @param healValue Amount of healing to receive
      */
     virtual void heal(int healValue)
     {
@@ -88,7 +92,7 @@ private:
     }
 };
 
-/*
+/**
  * Base abstract class for physical items
  * @param owner - Owner of the item
  * @param name - Name of the item
@@ -116,24 +120,29 @@ public:
     }
 
 protected:
-    /*
+    /**
      * Method for giving damage to another player
+     * @param to Target character
+     * @param damage Amount of damage to give
      */
     void giveDamageTo(Character &to, int damage)
     {
         to.takeDamage(damage);
     }
 
-    /*
+    /**
      * Method to heal player
+     * @param to Target character
+     * @param heal Amount of healing to give
      */
     void giveHealTo(Character &to, int heal)
     {
         to.heal(heal);
     }
 
-    /*
+    /**
      * Method for using the logic of the item
+     * @param target Character that will get item effects
      */
     virtual void useLogic(Character &target)
     {
@@ -146,7 +155,7 @@ protected:
 
 };
 
-/*
+/**
  * Child class of a physical item
  * @param damage - amount of damage that will be dealt with this weapon
  * @see PhysicalItem
@@ -177,7 +186,7 @@ protected:
 
 };
 
-/*
+/**
  * Child class of a physical item
  * @param healValue - amount of HP given to a character
  * @see PhysicalItem
@@ -206,7 +215,7 @@ protected:
     }
 };
 
-/*
+/**
  * Child class of a physical item
  * @param allowedTargets - map of characters that can be attacked with a spell
  * @see PhysicalItem
@@ -234,8 +243,9 @@ public:
         }
     }
 
-    /*
+    /**
      * Checks if target character is in allowedTargets list
+     * @param target A character to check
      * @see allowedTargets
      */
     bool isTargetInList(Character &target)
@@ -252,7 +262,7 @@ protected:
 
 };
 
-/*
+/**
  * Definition of a Container class
  */
 template<typename T>
@@ -269,7 +279,7 @@ public:
 template<typename T>
 concept DerivedFromPhysicalItem = is_base_of<PhysicalItem, T>::value;
 
-/*
+/**
  * Declaration of a container class with template type T, being all items derived from PhysicalItem
  * @param elements - map of items in the inventory
  * @param maxCapacity - max size
@@ -300,48 +310,53 @@ public:
         return this->elements.size() == maxCapacity;
     }
 
-    /*
+    /**
      * Adds item into the container
+     * @param newItem Item to add to the container
      */
     void addItem(shared_ptr<T> newItem)
     {
         elements.insert({newItem->getName(), std::move(newItem)});
     }
 
-    /*
+    /**
      * Gets a pointer to an item from the container
+     * @param item The item to get a pointer to
      */
     shared_ptr<T> &getItem(string &item)
     {
         return elements.at(item);
     }
 
-    /*
+    /**
      * Checks if item is in the container
+     * @param item Item to check
      */
     bool find(string &item)
     {
         return elements.contains(item);
     }
 
-    /*
-     * Gives a map of all items in the container
+    /**=
+     * @return Map of all items in the container
      */
     map<string, shared_ptr<T>> &toShow()
     {
         return elements;
     }
 
-    /*
+    /**
      * Removes item from the container
+     * @param itemName Name of item to remove
      */
     void removeItem(string &itemName)
     {
         elements.erase(itemName);
     }
 
-    /*
+    /**
      * Changes the size of the container
+     * @param size Size of the container
      */
     void resizeContainer(int size)
     {
@@ -351,20 +366,20 @@ public:
 
 };
 
-/*
+/**
  * Arsenal type, for Container<Weapons>
  */
 typedef Container<Weapon> Arsenal;
-/*
+/**
  * MedicalBag type, for Container<Potion>
  */
 typedef Container<Potion> MedicalBag;
-/*
+/**
  * SpellBook type, for Container<Spell>
  */
 typedef Container<Spell> SpellBook;
 
-/*
+/**
  * Child class of a character
  * Allows to store and use weapons
  * @param arsenal - container for weapon type items
@@ -390,7 +405,7 @@ public:
         return arsenal.isFull();
     }
 
-    /*
+    /**
      * Method for showing weapons
      */
     void showWeapons()
@@ -401,8 +416,10 @@ public:
         cout << endl;
     }
 
-    /*
+    /**
      * Method for attacking another player
+     * @param target Target character
+     * @param weaponName Weapon to attack with
      */
     void attack(Character &target, string weaponName)
     {
@@ -416,7 +433,7 @@ public:
     }
 };
 
-/*
+/**
  * Child class of a character
  * Allows to store and use potions
  * @param medicalBag - container for potion type items
@@ -439,7 +456,7 @@ public:
         return medicalBag.isFull();
     };
 
-    /*
+    /**
      * Method for showing potions
      */
     void showPotions()
@@ -450,8 +467,10 @@ public:
         cout << endl;
     }
 
-    /*
+    /**
      * Method for drinking potions
+     * @param target Target character
+     * @param potionName Name of the potion to drink
      */
     void drink(Character &target, string potionName)
     {
@@ -467,7 +486,7 @@ public:
 
 };
 
-/*
+/**
  * Child class of a character
  * Allows to store and use spells
  * @param spellBook - container for spell type items
@@ -492,7 +511,7 @@ public:
         return spellBook.isFull();
     }
 
-    /*
+    /**
      * Method for showing spells
      */
     void showSpells()
@@ -503,8 +522,10 @@ public:
         cout << endl;
     }
 
-    /*
+    /**
      * Method for casting spells on characters
+     * @param target Target character
+     * @param spellName Name of the spell to cast
      */
     void cast(Character &target, string spellName)
     {
@@ -523,7 +544,7 @@ public:
 
 };
 
-/*
+/**
  * Child class of a WeaponUser and PotionUser
  * @param maxAllowedWeapons - size of arsenal
  * @param maxAllowedPotions - size of medicalBag
@@ -561,7 +582,7 @@ private:
 
 };
 
-/*
+/**
  * Child class of a WeaponUser, PotionUser and SpellUser
  * @param maxAllowedWeapons - size of arsenal
  * @param maxAllowedPotions - size of medicalBag
@@ -603,7 +624,7 @@ private:
 
 };
 
-/*
+/**
  * Child class of a PotionUser and SpellUser
  * @param maxAllowedPotions - size of medicalBag
  * @param maxAllowedSpells - size of spellBook
@@ -640,12 +661,15 @@ private:
 
 };
 
-
+/**
+ * Main method with all input/output logic. Reads and writes from/to files
+ * @return 0?
+ */
 int main()
 {
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
-    /*
+    /**
      * A map of Characters
      */
     map<string, shared_ptr<Character>> characters;
